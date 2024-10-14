@@ -28,10 +28,7 @@ def merge_and_preprocess(weather_df, air_quality_df):
     except Exception as e:
         logger.error("Error in encoding target")
     
-    logger.info("Splitting the merged dataset into training and test sets...")
-    X_train, X_test, y_train, y_test = split_data(merged_df, target_column='target')  # Adjust target_column
-    
-    return X_train, X_test, y_train, y_test
+    return merged_df
 
 def final_preprocessing(df):
     """
@@ -69,24 +66,36 @@ def final_preprocessing(df):
         logger.error(f"Error in final preprocessing: {e}")
         return pd.DataFrame()
 
-def split_data(df, target_column):
+def split_data(df, target_column, date_columns=None):
     """
-    Split the dataset into training and testing sets.
+    Split the dataset into training and testing sets, remove non-numeric columns, and drop any date-related columns.
 
     Args:
     df (pd.DataFrame): The DataFrame containing the full dataset.
     target_column (str): The name of the target column.
+    date_columns (list): List of date-related columns to be dropped (optional).
 
     Returns:
     tuple: X_train, X_test, y_train, y_test (split data)
     """
     logger.info("Splitting data into training and test sets...")
-    
+
     try:
+        # Drop target column to create feature set (X) and separate target column (y)
         X = df.drop(target_column, axis=1)
         y = df[target_column]
+
+        # Drop non-numeric columns
+        X = X.select_dtypes(exclude=['object'])  # Exclude non-numeric columns (e.g., strings)
+        
+        # Drop date-related columns if provided
+        if date_columns:
+            X = X.drop(date_columns, axis=1)
+
+        # Split the data into training and testing sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         logger.info(f"Data successfully split. Training size: {X_train.shape[0]}, Test size: {X_test.shape[0]}")
+
     except Exception as e:
         logger.error("Error in splitting data", exc_info=True)
         return None, None, None, None
@@ -110,7 +119,7 @@ def encode_target(df, target_column):
         le = LabelEncoder()
         df[target_column] = le.fit_transform(df[target_column])
         logger.info(f"Successfully encoded {target_column}")
-        return df, le.classes_  # Returning the classes for interpretation
+        return df, le.classes_
     except Exception as e:
         logger.error(f"Error in encoding target column: {e}")
         return df, None

@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-logger = logging.getLogger("data preprocessing")
+logger = logging.getLogger("initial preprocessing")
 logger.info("Starting initial preprocessing...")
 
 def to_numeric(df, columns):
@@ -49,9 +49,12 @@ def handle_infinite_and_missing_values(df):
 
     logger.info("Handling missing values...")
     try:
+        # Select only numeric columns for filling missing values
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        
         # Fill missing numeric values with median
-        df.fillna(df.median(), inplace=True)
-        logger.info("Successfully handled missing values.")
+        df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
+        logger.info("Successfully handled missing values for numeric columns.")
     except Exception as e:
         logger.error("Error in handling missing values", exc_info=True)
     
